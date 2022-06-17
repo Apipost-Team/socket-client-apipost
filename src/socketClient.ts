@@ -20,7 +20,7 @@ class socketClient {
     this.init(api);
   }
   init(api: any) {
-    const { url, socketConfig } = api;
+    const { url, socketConfig,request } = api;
     this.url=url;
     if (socketConfig && socketConfig instanceof Object) {
       switch (this.clientType) {
@@ -29,6 +29,14 @@ class socketClient {
           this.options['maxPayload'] =socketConfig.informationSize * 1024 * 1024;
           this.options['reconnectNum']=socketConfig.reconnectNum;
           this.options['reconnectTime']=socketConfig.reconnectTime;
+          if(request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array){
+            this.options['headers']={};
+            for (const header of request.header.parameter) {
+              if(header?.key && (!header.hasOwnProperty('is_checked') || header.is_checked > 0)){
+                this.options.headers[header.key] = header?.value || '';
+              }
+            }
+          }
           break;
         case 'sockJs':
           this.options['timeout'] = socketConfig.shakeHandsTimeOut;
@@ -41,6 +49,14 @@ class socketClient {
               this.options['reconnectionDelay']= socketConfig.reconnectTime;
               this.options['timeout']=socketConfig.shakeHandsTimeOut;
               this.options['path']=socketConfig.shakeHandsPath;
+              if(request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array){
+                this.options['extraHeaders']={};
+                for (const header of request.header.parameter) {
+                  if(header?.key && (!header.hasOwnProperty('is_checked') || header.is_checked > 0)){
+                    this.options.headers[header.key] = header?.value || '';
+                  }
+                }
+              }
               break;
             default:
               break;
