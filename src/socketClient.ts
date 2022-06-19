@@ -130,6 +130,33 @@ class socketClient {
         break;
     }
   }
+  onmessage(fnc : Function, event : string = ''){
+    switch (this.clientType) {
+      case 'ws':
+        this.client.on('message', function message(data : any) {
+          fnc(data);
+        });
+        break;
+      case 'sockJs':
+        this.client.onmessage = function(e : any) {
+          fnc(e.data);
+      };
+        break;
+      case 'socketIo':
+        switch (this.options.socketIoVersion) {
+          case 'v3':
+            this.client.on(event, (data : any) => {
+              fnc(data);
+            });
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 
