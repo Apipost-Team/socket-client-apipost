@@ -73,18 +73,6 @@ class socketClient {
     switch (clientType) {
       case 'ws':
         this.client = new WebSocket(url, {}, options);
-        this.client.on("error", (error : any) => {
-          console.log(JSON.stringify(error),'error');
-          // 异常重连
-          if(options.hasOwnProperty('reconnectNum')){
-            if(options.reconnectNum > this.reconnectCount && this.client?.readyState != 1){
-              this.reConnect();
-            }
-          }
-        });
-        this.client.on("open", () => {
-          this.reconnectCount = options?.reconnectNum
-        });
         console.log('OPEN', this.client.readyState);
         break;
       case 'sockJs':
@@ -172,7 +160,70 @@ class socketClient {
       case 'socketIo':
         switch (this.options.socketIoVersion) {
           case 'v3':
-            this.client.on('close', (data : any) => {
+            this.client.on('disconnect', (data : any) => {
+              fnc(data);
+            });
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  onconnect(fnc: Function){
+    let that: any=this;
+    switch (that.clientType) {
+      case 'ws':
+        that.client.on('open', function message(data : any) {
+          that.reconnectCount = that.options?.reconnectNum
+          fnc(data);
+        });
+        break;
+      case 'sockJs':
+        that.client.onopen = function(e : any) {
+          fnc(e);
+      };
+        break;
+      case 'socketIo':
+        switch (that.options.socketIoVersion) {
+          case 'v3':
+            that.client.on('connect', (data : any) => {
+              fnc(data);
+            });
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  onerror(fnc: Function){
+    let that: any=this;
+    switch (that.clientType) {
+      case 'ws':
+        that.client.on("error", (error : any) => {
+          console.log(JSON.stringify(error),'error');
+          // 异常重连
+          if(that.options.hasOwnProperty('reconnectNum')){
+            if(that.options.reconnectNum > that.reconnectCount && that.client?.readyState != 1){
+              that.reConnect();
+            }
+          }
+        });
+        break;
+      case 'sockJs':
+        that.client.onerror = function(e : any) {
+          fnc(e);
+      };
+        break;
+      case 'socketIo':
+        switch (that.options.socketIoVersion) {
+          case 'v3':
+            that.client.on('connect_error', (data : any) => {
               fnc(data);
             });
             break;
@@ -185,7 +236,5 @@ class socketClient {
     }
   }
 }
-
-
 
 export default socketClient;
