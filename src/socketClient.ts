@@ -157,6 +157,33 @@ class socketClient {
         break;
     }
   }
+  onclose(fnc: Function){
+    switch (this.clientType) {
+      case 'ws':
+        this.client.on('close', function message(data : any) {
+          fnc(data);
+        });
+        break;
+      case 'sockJs':
+        this.client.onclose = function(e : any) {
+          fnc(e);
+      };
+        break;
+      case 'socketIo':
+        switch (this.options.socketIoVersion) {
+          case 'v3':
+            this.client.on('close', (data : any) => {
+              fnc(data);
+            });
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 
