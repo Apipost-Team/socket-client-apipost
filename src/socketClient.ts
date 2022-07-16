@@ -5,69 +5,67 @@ import sockJs from 'sockjs-client';
 import WebSocket from 'ws';
 
 class socketClient {
-  client: any;
-  clientType: string;
-  options: any;
-  url: string;
-  reconnectCount: number;
-  constructor(clientType: string = 'ws', api: any = {}) {
-    this.clientType = clientType;
-    this.client = {};
-    this.options = {};
-    this.url = '';
-    this.reconnectCount = 0;
-    // 初始化
-    this.init(api);
+  connectionPool: any;
+  constructor() {
+    this.connectionPool = {}; // 连接池 id，包含client对象,clientType,options
   }
-  init(api: any) {
-    const { url, socketConfig, request } = api;
-    this.url = url;
+  initOptions(api: any) {
+    const { url, socketConfig, request, method, target_id } = api;
+    this.connectionPool[target_id] = {
+      id: target_id,
+      client: {},
+      options: {},
+      reconnectCount: 0,
+    }
+    let connectionObj = this.connectionPool[target_id];
+    connectionObj.options.url = url;
+    connectionObj.clientType = method;
     if (socketConfig && socketConfig instanceof Object) {
-      switch (this.clientType) {
-        case 'ws':
-          this.options['handshakeTimeout'] = socketConfig.shakeHandsTimeOut;
-          this.options['maxPayload'] = socketConfig.informationSize * 1024 * 1024;
-          this.options['reconnectNum'] = socketConfig.reconnectNum;
-          this.options['reconnectTime'] = socketConfig.reconnectTime;
+      switch (method) {
+        case 'Raw':
+          connectionObj.options.handshakeTimeout = socketConfig.shakeHandsTimeOut;
+          connectionObj.options.maxPayload = socketConfig.informationSize * 1024 * 1024;
+          connectionObj.options.reconnectNum = socketConfig.reconnectNum;
+          connectionObj.options.reconnectTime = socketConfig.reconnectTime;
           if (request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array) {
-            this.options['headers'] = {};
+            connectionObj.options.headers = {};
             for (const header of request.header.parameter) {
               if (header?.key && (!header.hasOwnProperty('is_checked') || header.is_checked > 0)) {
-                this.options.headers[header.key] = header?.value || '';
+                connectionObj.options.headers[header.key] = header?.value || '';
               }
             }
           }
           break;
         case 'sockJs':
-          this.options['timeout'] = socketConfig.shakeHandsTimeOut;
-          this.options['server'] = socketConfig.sockJsServer;
+          connectionObj.options.timeout = socketConfig.shakeHandsTimeOut;
+          connectionObj.options.server = socketConfig.sockJsServer;
           break;
         case 'socketIo':
-          switch (this.options.socketIoVersion) {
+          switch (connectionObj.options.socketIoVersion) {
             case 'v3':
-              this.options['reconnectionAttempts'] = socketConfig.reconnectNum;
-              this.options['reconnectionDelay'] = socketConfig.reconnectTime;
-              this.options['timeout'] = socketConfig.shakeHandsTimeOut;
-              this.options['path'] = socketConfig.shakeHandsPath;
+              connectionObj.options.reconnectionAttempts = socketConfig.reconnectNum;
+              connectionObj.options.reconnectionDelay = socketConfig.reconnectTime;
+              connectionObj.options.timeout = socketConfig.shakeHandsTimeOut;
+              connectionObj.options.path = socketConfig.shakeHandsPath;
               if (request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array) {
-                this.options['extraHeaders'] = {};
+                connectionObj.options.extraHeaders = {};
                 for (const header of request.header.parameter) {
                   if (header?.key && (!header.hasOwnProperty('is_checked') || header.is_checked > 0)) {
-                    this.options.headers[header.key] = header?.value || '';
+                    connectionObj.options.headers[header.key] = header?.value || '';
                   }
                 }
               }
               break;
             default:
-              this.options['reconnectionAttempts'] = socketConfig.reconnectNum;
-              this.options['reconnectionDelay'] = socketConfig.reconnectTime;
-              this.options['timeout'] = socketConfig.shakeHandsTimeOut;
-              this.options['path'] = socketConfig.shakeHandsPath;
+              connectionObj.options.reconnectionAttempts = socketConfig.reconnectNum;
+              connectionObj.options.reconnectionDelay = socketConfig.reconnectTime;
+              connectionObj.options.timeout = socketConfig.shakeHandsTimeOut;
+              connectionObj.options.path = socketConfig.shakeHandsPath;
               if (request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array) {
-                this.options['extraHeaders'] = {};
+                connectionObj.options.extraHeaders = {};
                 for (const header of request.header.parameter) {
                   if (header?.key && (!header.hasOwnProperty('is_checked') || header.is_checked > 0)) {
-                    this.options.headers[header.key] = header?.value || '';
+                    connectionObj.options.headers[header.key] = header?.value || '';
                   }
                 }
               }
@@ -78,28 +76,28 @@ class socketClient {
           break;
       }
     }
-    this.createClient(this.clientType, this.url, this.options);
   }
-  createClient(clientType: string = 'ws', url: string = '', options: any = {}) {
-    console.log('options', url, JSON.stringify(options, null, '\t'));
+  createClient(target_id: string) {
+    let connectionObj = this.connectionPool[target_id];
+    const { options, clientType } = connectionObj;
     switch (clientType) {
-      case 'ws':
-        this.client = new WebSocket(url, {}, options);
-        console.log('OPEN', this.client.readyState);
+      case 'Raw':
+        connectionObj.client = new WebSocket(options.url, {}, options);
+        console.log('OPEN', connectionObj.client.readyState);
         break;
       case 'sockJs':
-        this.client = new sockJs(url, {}, options);
+        connectionObj.client = new sockJs(options.url, {}, options);
         break;
       case 'socketIo':
-        switch (this.options.socketIoVersion) {
+        switch (options.socketIoVersion) {
           case 'v2':
-            this.client = socketIo2(url, options)
+            connectionObj.client = socketIo2(options.url, options)
             break;
           case 'v3':
-            this.client = socketIo3(url, options)
+            connectionObj.client = socketIo3(options.url, options)
             break;
           case 'v4':
-            this.client = socketIo4(url, options)
+            connectionObj.client = socketIo4(options.url, options)
             break;
           default:
             break;
@@ -109,30 +107,39 @@ class socketClient {
         break;
     }
   }
-  reConnect() {
-    this.reconnectCount++;
+  connect(api: any) {
+    // 初始化配置options
+    this.initOptions(api);
+    // 连接client
+    this.createClient(api?.target_id);
+  }
+
+  reConnect(id: string, connectionObj: any) {
+    connectionObj.reconnectCount++
     setTimeout(() => {
-      this.createClient(this.clientType, this.url, this.options);
-    }, this.options.reconnectTime);
+      this.createClient(id);
+    }, connectionObj.options.reconnectTime);
   }
-  send(data: any, event: any = '') {
-    switch (this.clientType) {
-      case 'ws':
-        this.client.send(data);
+  send(id: string, data: any, event: any = '') {
+    let connectionObj = this.connectionPool[id];
+    const { options, clientType, client } = connectionObj;
+    switch (clientType) {
+      case 'Raw':
+        client.send(data);
         break;
       case 'sockJs':
-        this.client.send(data);
+        client.send(data);
         break;
       case 'socketIo':
-        switch (this.options.socketIoVersion) {
+        switch (options.socketIoVersion) {
           case 'v2':
-            this.client.emit(event, data);
+            client.emit(event, data);
             break;
           case 'v3':
-            this.client.emit(event, data);
+            client.emit(event, data);
             break;
           case 'v4':
-            this.client.emit(event, data);
+            client.emit(event, data);
             break;
           default:
             break;
@@ -142,32 +149,39 @@ class socketClient {
         break;
     }
   }
-  onmessage(fnc: Function, event: string = '') {
-    switch (this.clientType) {
-      case 'ws':
-        this.client.on('message', function message(data: any) {
+  close(id: string){
+    let connectionObj = this.connectionPool[id];
+    const { client } = connectionObj;
+    client.close();
+  }
+  onmessage(id: string, fnc: Function, event: string = '') {
+    let connectionObj = this.connectionPool[id];
+    const { options, clientType, client } = connectionObj;
+    switch (clientType) {
+      case 'Raw':
+        client.on('message', function message(data: any) {
           fnc(data);
         });
         break;
       case 'sockJs':
-        this.client.onmessage = function (e: any) {
+        client.onmessage = function (e: any) {
           fnc(e.data);
         };
         break;
       case 'socketIo':
-        switch (this.options.socketIoVersion) {
+        switch (options.socketIoVersion) {
           case 'v2':
-            this.client.on(event, (data: any) => {
+            client.on(event, (data: any) => {
               fnc(data);
             });
             break;
           case 'v3':
-            this.client.on(event, (data: any) => {
+            client.on(event, (data: any) => {
               fnc(data);
             });
             break;
           case 'v4':
-            this.client.on(event, (data: any) => {
+            client.on(event, (data: any) => {
               fnc(data);
             });
             break;
@@ -179,32 +193,34 @@ class socketClient {
         break;
     }
   }
-  onclose(fnc: Function) {
-    switch (this.clientType) {
-      case 'ws':
-        this.client.on('close', function message(data: any) {
+  onclose(id: string, fnc: Function) {
+    let connectionObj = this.connectionPool[id];
+    const { options, clientType, client } = connectionObj;
+    switch (clientType) {
+      case 'Raw':
+        client.on('close', function message(data: any) {
           fnc(data);
         });
         break;
       case 'sockJs':
-        this.client.onclose = function (e: any) {
+        client.onclose = function (e: any) {
           fnc(e);
         };
         break;
       case 'socketIo':
-        switch (this.options.socketIoVersion) {
+        switch (options.socketIoVersion) {
           case 'v2':
-            this.client.on('disconnect', (data: any) => {
+            client.on('disconnect', (data: any) => {
               fnc(data);
             });
             break;
           case 'v3':
-            this.client.on('disconnect', (data: any) => {
+            client.on('disconnect', (data: any) => {
               fnc(data);
             });
             break;
           case 'v4':
-            this.client.on('disconnect', (data: any) => {
+            client.on('disconnect', (data: any) => {
               fnc(data);
             });
             break;
@@ -216,33 +232,35 @@ class socketClient {
         break;
     }
   }
-  onconnect(fnc: Function) {
+  onconnect(id: string, fnc: Function) {
     let that: any = this;
-    switch (that.clientType) {
-      case 'ws':
-        that.client.on('open', function message(data: any) {
-          that.reconnectCount = that.options?.reconnectNum
+    let connectionObj = this.connectionPool[id];
+    const { options, clientType, client } = connectionObj;
+    switch (clientType) {
+      case 'Raw':
+        client.on('open', function message(data: any) {
+          connectionObj.reconnectCount = options?.reconnectNum || 0;
           fnc(data);
         });
         break;
       case 'sockJs':
-        that.client.onopen = function (e: any) {
+        client.onopen = function (e: any) {
           fnc(e);
         };
         break;
       case 'socketIo':
-        switch (that.options.socketIoVersion) {
+        switch (options.socketIoVersion) {
           case 'v2':
-            that.client.on('connect', (data: any) => {
+            client.on('connect', (data: any) => {
               fnc(data);
             });
           case 'v3':
-            that.client.on('connect', (data: any) => {
+            client.on('connect', (data: any) => {
               fnc(data);
             });
             break;
           case 'v4':
-            that.client.on('connect', (data: any) => {
+            client.on('connect', (data: any) => {
               fnc(data);
             });
             break;
@@ -254,39 +272,41 @@ class socketClient {
         break;
     }
   }
-  onerror(fnc: Function) {
+  onerror(id: string, fnc: Function) {
     let that: any = this;
-    switch (that.clientType) {
-      case 'ws':
-        that.client.on("error", (error: any) => {
+    let connectionObj = this.connectionPool[id];
+    const { options, clientType, client } = connectionObj;
+    switch (clientType) {
+      case 'Raw':
+        client.on("error", (error: any) => {
           console.log(JSON.stringify(error), 'error');
           // 异常重连
-          if (that.options.hasOwnProperty('reconnectNum')) {
-            if (that.options.reconnectNum > that.reconnectCount && that.client?.readyState != 1) {
-              that.reConnect();
+          if (options.hasOwnProperty('reconnectNum')) {
+            if (options.reconnectNum > connectionObj.reconnectCount && client?.readyState != 1) {
+              that.reConnect(id, connectionObj);
             }
           }
         });
         break;
       case 'sockJs':
-        that.client.onerror = function (e: any) {
+        client.onerror = function (e: any) {
           fnc(e);
         };
         break;
       case 'socketIo':
-        switch (that.options.socketIoVersion) {
+        switch (options.socketIoVersion) {
           case 'v2':
-            that.client.on('connect_error', (data: any) => {
+            client.on('connect_error', (data: any) => {
               fnc(data);
             });
             break;
           case 'v3':
-            that.client.on('connect_error', (data: any) => {
+            client.on('connect_error', (data: any) => {
               fnc(data);
             });
             break;
           case 'v4':
-            that.client.on('connect_error', (data: any) => {
+            client.on('connect_error', (data: any) => {
               fnc(data);
             });
             break;
