@@ -83,6 +83,7 @@ class socketClient {
     switch (clientType) {
       case 'Raw':
         connectionObj.client = new WebSocket(options.url, {}, options);
+        console.log('OPEN', connectionObj.client.readyState);
         break;
       case 'sockJs':
         connectionObj.client = new sockJs(options.url, {}, options);
@@ -237,10 +238,9 @@ class socketClient {
     const { options, clientType, client } = connectionObj;
     switch (clientType) {
       case 'Raw':
-        client.on('connection', function connection(ws: any, req : any, res : any) {
-        console.log('OPEN', ws,req,res);
+        client.on('open', function message() {
           connectionObj.reconnectCount = options?.reconnectNum || 0;
-          fnc({ws,req,res});
+          fnc();
         });
         break;
       case 'sockJs':
@@ -316,6 +316,17 @@ class socketClient {
         break;
       default:
         break;
+    }
+  }
+  closeAll(){
+    for (const id in this.connectionPool) {
+      try {
+        let connectionObj = this.connectionPool[id];
+      const { client } = connectionObj;
+      client.close();
+      } catch (error) {
+        // error
+      }
     }
   }
 }
