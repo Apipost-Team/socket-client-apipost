@@ -237,7 +237,7 @@ class socketClient {
     const { options, clientType, client } = connectionObj;
     switch (clientType) {
       case 'Raw':
-        client.on('connection', function connection(ws, req, res) {
+        client.on('connection', function connection(ws: any, req : any, res : any) {
         console.log('OPEN', ws,req,res);
           connectionObj.reconnectCount = options?.reconnectNum || 0;
           fnc({ws,req,res});
