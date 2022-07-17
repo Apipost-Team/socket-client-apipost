@@ -279,12 +279,15 @@ class socketClient {
     switch (clientType) {
       case 'Raw':
         client.on("error", (error: any) => {
-          console.log(JSON.stringify(error), 'error');
           // 异常重连
           if (options.hasOwnProperty('reconnectNum')) {
             if (options.reconnectNum > connectionObj.reconnectCount && client?.readyState != 1) {
               that.reConnect(id, connectionObj);
+            }else{
+              fnc(error?.message || String(error));
             }
+          }else{
+            fnc(error?.message || String(error));
           }
         });
         break;
