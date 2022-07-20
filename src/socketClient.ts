@@ -160,7 +160,7 @@ class socketClient {
         break;
       case 'Socket.IO':
         if(Array.isArray(options.socketIoEventListeners) && options.socketIoEventListeners.length > 0){
-          options.socketIoEventListeners.forEach(item => {
+          options.socketIoEventListeners.forEach((item : any) => {
             if((!item.hasOwnProperty('is_checked') || item.is_checked > 0) && item.hasOwnProperty('key') && item.key && item.key.length > 0){
               client.on(item.key, (data: any) => {
                 fnc(data);
