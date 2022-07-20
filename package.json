@@ -1,6 +1,6 @@
 {
   "name": "socket-client-apipost",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "socket-client-apipost",
   "main": "dist/index.js",
   "files": [
