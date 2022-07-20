@@ -44,6 +44,7 @@ class socketClient {
         case 'Socket.IO':
           connectionObj.options.reconnectionAttempts = socketConfig.reconnectNum;
           connectionObj.options.reconnectionDelay = socketConfig.reconnectTime;
+          connectionObj.options.socketIoEventListeners=socketConfig.socketIoEventListeners;
           if(connectionObj.options.timeout > 0) connectionObj.options.timeout = socketConfig.shakeHandsTimeOut;
           connectionObj.options.path = socketConfig.shakeHandsPath;
           if (request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array) {
@@ -158,25 +159,18 @@ class socketClient {
         };
         break;
       case 'Socket.IO':
-        switch (options.socketIoVersion) {
-          case 'v2':
-            client.on(event, (data: any) => {
-              fnc(data);
-            });
-            break;
-          case 'v3':
-            client.on(event, (data: any) => {
-              fnc(data);
-            });
-            break;
-          case 'v4':
-            client.on(event, (data: any) => {
-              fnc(data);
-            });
-            break;
-          default:
-            break;
+        if(Array.isArray(options.socketIoEventListeners) && options.socketIoEventListeners.length > 0){
+          options.socketIoEventListeners.forEach(item => {
+            if((!item.hasOwnProperty('is_checked') || item.is_checked > 0) && item.hasOwnProperty('key') && item.key && item.key.length > 0){
+              client.on(item.key, (data: any) => {
+                fnc(data);
+              });
+            }
+          });
         }
+          client.on('message', (data: any) => {
+            fnc(data);
+          });
         break;
       default:
         break;
