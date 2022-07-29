@@ -24,10 +24,10 @@ class socketClient {
     if (socketConfig && socketConfig instanceof Object) {
       switch (method) {
         case 'Raw':
-          connectionObj.options.handshakeTimeout = socketConfig.shakeHandsTimeOut;
+          connectionObj.options.handshakeTimeout = parseInt(socketConfig.shakeHandsTimeOut);
           connectionObj.options.maxPayload = socketConfig.informationSize * 1024 * 1024;
-          connectionObj.options.reconnectNum = socketConfig.reconnectNum;
-          connectionObj.options.reconnectTime = socketConfig.reconnectTime;
+          connectionObj.options.reconnectNum = parseInt(socketConfig.reconnectNum);
+          connectionObj.options.reconnectTime = parseInt(socketConfig.reconnectTime);
           if (request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array) {
             connectionObj.options.headers = {};
             for (const header of request.header.parameter) {
@@ -38,14 +38,14 @@ class socketClient {
           }
           break;
         case 'SockJs':
-          connectionObj.options.timeout = socketConfig?.shakeHandsTimeOut;
+          connectionObj.options.timeout = parseInt(socketConfig?.shakeHandsTimeOut);
           connectionObj.options.server = socketConfig?.sockJsServer;
           break;
         case 'Socket.IO':
-          connectionObj.options.reconnectionAttempts = socketConfig.reconnectNum;
-          connectionObj.options.reconnectionDelay = socketConfig.reconnectTime;
+          connectionObj.options.reconnectionAttempts = socketConfig?.reconnectNum ? parseInt(socketConfig.reconnectNum) : 0;
+          connectionObj.options.reconnectionDelay = parseInt(socketConfig.reconnectTime);
           connectionObj.options.socketIoEventListeners=socketConfig.socketIoEventListeners;
-          if(connectionObj.options.timeout > 0) connectionObj.options.timeout = socketConfig.shakeHandsTimeOut;
+          if(connectionObj.options.timeout > 0) connectionObj.options.timeout = parseInt(socketConfig.shakeHandsTimeOut);
           connectionObj.options.path = socketConfig.shakeHandsPath;
           if (request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array) {
             connectionObj.options.extraHeaders = {};
