@@ -160,10 +160,23 @@ class socketClient {
     let connectionObj = this.connectionPool[id];
 
     if (typeof connectionObj == 'object') {
-      const { client } = connectionObj;
-      client.close();
+      const { client, clientType } = connectionObj;
+      switch (clientType) {
+        case 'Raw':
+          client.terminate();
+          break;
+        case 'SockJs':
+          client.close();
+          break;
+        case 'Socket.IO':
+          client.disconnect();
+          break;
+        default:
+          client.close();
+          break;
+      }
     }
-    if(this.connectionPool && this.connectionPool.hasOwnProperty(id)){
+    if (this.connectionPool && this.connectionPool.hasOwnProperty(id)) {
       delete this.connectionPool[id];
     }
   }
@@ -350,7 +363,7 @@ class socketClient {
         // error
       }
     }
-    this.connectionPool={};
+    this.connectionPool = {};
   }
 }
 
