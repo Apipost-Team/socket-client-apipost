@@ -163,6 +163,9 @@ class socketClient {
       const { client } = connectionObj;
       client.close();
     }
+    if(this.connectionPool && this.connectionPool.hasOwnProperty(id)){
+      delete this.connectionPool[id];
+    }
   }
   onmessage(id: string, fnc: Function, event: string = '') {
     let connectionObj = this.connectionPool[id];
@@ -347,6 +350,7 @@ class socketClient {
         // error
       }
     }
+    this.connectionPool={};
   }
 }
 
