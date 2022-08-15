@@ -77,7 +77,7 @@ class socketClient {
         switch (clientType) {
           case 'Raw':
             connectionObj.client = new WebSocket(options.url, {}, options);
-            console.log('OPEN', connectionObj.client.readyState);
+            console.log('OPEN', connectionObj?.client?.readyState);
             break;
           case 'SockJs':
             connectionObj.client = new sockJs(options.url, {}, options);
@@ -128,24 +128,24 @@ class socketClient {
     let connectionObj = this.connectionPool[id];
 
     if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj;
+      const { options, clientType, client } = connectionObj || {};
       switch (clientType) {
         case 'Raw':
-          client.send(data);
+          client?.send(data);
           break;
         case 'SockJs':
-          client.send(data);
+          client?.send(data);
           break;
         case 'Socket.IO':
           switch (options.socketIoVersion) {
             case 'v2':
-              client.emit(event, data);
+              client?.emit(event, data);
               break;
             case 'v3':
-              client.emit(event, data);
+              client?.emit(event, data);
               break;
             case 'v4':
-              client.emit(event, data);
+              client?.emit(event, data);
               break;
             default:
               break;
@@ -160,19 +160,19 @@ class socketClient {
     let connectionObj = this.connectionPool[id];
 
     if (typeof connectionObj == 'object') {
-      const { client, clientType } = connectionObj;
+      const { client, clientType } = connectionObj || {};
       switch (clientType) {
         case 'Raw':
-          client.terminate();
+          client?.terminate();
           break;
         case 'SockJs':
-          client.close();
+          client?.close();
           break;
         case 'Socket.IO':
-          client.disconnect();
+          client?.disconnect();
           break;
         default:
-          client.close();
+          client?.close();
           break;
       }
     }
@@ -183,7 +183,10 @@ class socketClient {
   onmessage(id: string, fnc: Function, event: string = '') {
     let connectionObj = this.connectionPool[id];
     if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj;
+      const { options, clientType, client } = connectionObj || {};
+      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
+        return
+      }
       switch (clientType) {
         case 'Raw':
           client.on('message', function message(data: any) {
@@ -218,7 +221,10 @@ class socketClient {
     let connectionObj = this.connectionPool[id];
 
     if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj;
+      const { options, clientType, client } = connectionObj || {};
+      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
+        return
+      }
       switch (clientType) {
         case 'Raw':
           client.on('close', function message(data: any) {
@@ -260,7 +266,10 @@ class socketClient {
     let that: any = this;
     let connectionObj = this.connectionPool[id];
     if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj;
+      const { options, clientType, client } = connectionObj || {};
+      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
+        return
+      }
       switch (clientType) {
         case 'Raw':
           client.on('open', function message() {
@@ -303,7 +312,10 @@ class socketClient {
     let that: any = this;
     let connectionObj = this.connectionPool[id];
     if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj;
+      const { options, clientType, client } = connectionObj || {};
+      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
+        return
+      }
       switch (clientType) {
         case 'Raw':
           client.on("error", (error: any) => {
@@ -356,8 +368,8 @@ class socketClient {
       try {
         let connectionObj = this.connectionPool[id];
         if (typeof connectionObj == 'object') {
-          const { client } = connectionObj;
-          client.close();
+          const { client } = connectionObj || {};
+          client?.close();
         }
       } catch (error) {
         // error
