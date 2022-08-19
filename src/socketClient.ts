@@ -104,28 +104,37 @@ class socketClient {
     }
   }
   connect(api: any) {
-    // 初始化配置options
+    try {
+       // 初始化配置options
     this.initOptions(api);
     // 连接client
     this.createClient(api?.target_id);
+    } catch (error) {
+      
+    }
   }
 
   reConnect(id: string, connectionObj: any) {
-    let reconnectTime = 5000;
+    try {
+      let reconnectTime = 5000;
 
-    if (typeof connectionObj == 'object') {
-      if (typeof connectionObj.options == 'object') {
-        reconnectTime = connectionObj.options.reconnectTime
+      if (typeof connectionObj == 'object') {
+        if (typeof connectionObj.options == 'object') {
+          reconnectTime = connectionObj.options.reconnectTime
+        }
+  
+        connectionObj.reconnectCount++
+        setTimeout(() => {
+          this.createClient(id);
+        }, reconnectTime);
       }
-
-      connectionObj.reconnectCount++
-      setTimeout(() => {
-        this.createClient(id);
-      }, reconnectTime);
+    } catch (error) {
+      
     }
   }
   send(id: string, data: any, event: any = '') {
-    let connectionObj = this.connectionPool[id];
+    try {
+      let connectionObj = this.connectionPool[id];
 
     if (typeof connectionObj == 'object') {
       const { options, clientType, client } = connectionObj || {};
@@ -155,9 +164,13 @@ class socketClient {
           break;
       }
     }
+    } catch (error) {
+      
+    }
   }
   close(id: string) {
-    let connectionObj = this.connectionPool[id];
+    try {
+      let connectionObj = this.connectionPool[id];
 
     if (typeof connectionObj == 'object') {
       const { client, clientType } = connectionObj || {};
@@ -179,46 +192,54 @@ class socketClient {
     if (this.connectionPool && this.connectionPool.hasOwnProperty(id)) {
       delete this.connectionPool[id];
     }
+    } catch (error) {
+      
+    }
   }
   onmessage(id: string, fnc: Function, event: string = '') {
-    let connectionObj = this.connectionPool[id];
-    if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj || {};
-      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
-        return
-      }
-      switch (clientType) {
-        case 'Raw':
-          client.on('message', function message(data: any) {
-            fnc(data);
-          });
-          break;
-        case 'SockJs':
-          client.onmessage = function (e: any) {
-            fnc(e.data);
-          };
-          break;
-        case 'Socket.IO':
-          if (Array.isArray(options.socketIoEventListeners) && options.socketIoEventListeners.length > 0) {
-            options.socketIoEventListeners.forEach((item: any) => {
-              if ((!item.hasOwnProperty('is_checked') || item.is_checked > 0) && item.hasOwnProperty('key') && item.key && item.key.length > 0) {
-                client.on(item.key, (data: any) => {
-                  fnc(data);
-                });
-              }
+    try {
+      let connectionObj = this.connectionPool[id];
+      if (typeof connectionObj == 'object') {
+        const { options, clientType, client } = connectionObj || {};
+        if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
+          return
+        }
+        switch (clientType) {
+          case 'Raw':
+            client.on('message', function message(data: any) {
+              fnc(data);
             });
-          }
-          client.on('message', (data: any) => {
-            fnc(data);
-          });
-          break;
-        default:
-          break;
+            break;
+          case 'SockJs':
+            client.onmessage = function (e: any) {
+              fnc(e.data);
+            };
+            break;
+          case 'Socket.IO':
+            if (Array.isArray(options.socketIoEventListeners) && options.socketIoEventListeners.length > 0) {
+              options.socketIoEventListeners.forEach((item: any) => {
+                if ((!item.hasOwnProperty('is_checked') || item.is_checked > 0) && item.hasOwnProperty('key') && item.key && item.key.length > 0) {
+                  client.on(item.key, (data: any) => {
+                    fnc(data);
+                  });
+                }
+              });
+            }
+            client.on('message', (data: any) => {
+              fnc(data);
+            });
+            break;
+          default:
+            break;
+        }
       }
+    } catch (error) {
+      
     }
   }
   onclose(id: string, fnc: Function) {
-    let connectionObj = this.connectionPool[id];
+    try {
+      let connectionObj = this.connectionPool[id];
 
     if (typeof connectionObj == 'object') {
       const { options, clientType, client } = connectionObj || {};
@@ -261,9 +282,13 @@ class socketClient {
           break;
       }
     }
+    } catch (error) {
+      
+    }
   }
   onconnect(id: string, fnc: Function) {
-    let that: any = this;
+    try {
+      let that: any = this;
     let connectionObj = this.connectionPool[id];
     if (typeof connectionObj == 'object') {
       const { options, clientType, client } = connectionObj || {};
@@ -307,9 +332,13 @@ class socketClient {
           break;
       }
     }
+    } catch (error) {
+      
+    }
   }
   onerror(id: string, fnc: Function) {
-    let that: any = this;
+    try {
+      let that: any = this;
     let connectionObj = this.connectionPool[id];
     if (typeof connectionObj == 'object') {
       const { options, clientType, client } = connectionObj || {};
@@ -360,6 +389,9 @@ class socketClient {
         default:
           break;
       }
+    }
+    } catch (error) {
+      
     }
   }
 
