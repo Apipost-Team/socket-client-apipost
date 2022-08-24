@@ -1,4 +1,4 @@
-import { io as socketIo2 } from 'socket.io-client2';
+import socketIo2 from 'socket.io-client2';
 import { io as socketIo3 } from 'socket.io-client3';
 import { io as socketIo4 } from 'socket.io-client4';
 import sockJs from 'sockjs-client';
@@ -51,7 +51,7 @@ class socketClient {
             connectionObj.options.extraHeaders = {};
             for (const header of request.header.parameter) {
               if (header?.key && (!header.hasOwnProperty('is_checked') || header.is_checked > 0)) {
-                connectionObj.options.headers[header.key] = header?.value || '';
+                connectionObj.options.extraHeaders[header.key] = header?.value || '';
               }
             }
           }
@@ -85,7 +85,7 @@ class socketClient {
           case 'Socket.IO':
             switch (options.socketIoVersion) {
               case 'v2':
-                connectionObj.client = socketIo2(options.url, options)
+                connectionObj.client = socketIo2(options.url, { path: options.path })
                 break;
               case 'v3':
                 connectionObj.client = socketIo3(options.url, options)
@@ -105,12 +105,12 @@ class socketClient {
   }
   connect(api: any) {
     try {
-       // 初始化配置options
-    this.initOptions(api);
-    // 连接client
-    this.createClient(api?.target_id);
+      // 初始化配置options
+      this.initOptions(api);
+      // 连接client
+      this.createClient(api?.target_id);
     } catch (error) {
-      
+
     }
   }
 
@@ -122,78 +122,78 @@ class socketClient {
         if (typeof connectionObj.options == 'object') {
           reconnectTime = connectionObj.options.reconnectTime
         }
-  
+
         connectionObj.reconnectCount++
         setTimeout(() => {
           this.createClient(id);
         }, reconnectTime);
       }
     } catch (error) {
-      
+
     }
   }
   send(id: string, data: any, event: any = '') {
     try {
       let connectionObj = this.connectionPool[id];
 
-    if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj || {};
-      switch (clientType) {
-        case 'Raw':
-          client?.send(data);
-          break;
-        case 'SockJs':
-          client?.send(data);
-          break;
-        case 'Socket.IO':
-          switch (options.socketIoVersion) {
-            case 'v2':
-              client?.emit(event, data);
-              break;
-            case 'v3':
-              client?.emit(event, data);
-              break;
-            case 'v4':
-              client?.emit(event, data);
-              break;
-            default:
-              break;
-          }
-          break;
-        default:
-          break;
+      if (typeof connectionObj == 'object') {
+        const { options, clientType, client } = connectionObj || {};
+        switch (clientType) {
+          case 'Raw':
+            client?.send(data);
+            break;
+          case 'SockJs':
+            client?.send(data);
+            break;
+          case 'Socket.IO':
+            switch (options.socketIoVersion) {
+              case 'v2':
+                client?.emit(event, data);
+                break;
+              case 'v3':
+                client?.emit(event, data);
+                break;
+              case 'v4':
+                client?.emit(event, data);
+                break;
+              default:
+                break;
+            }
+            break;
+          default:
+            break;
+        }
       }
-    }
     } catch (error) {
-      
+
     }
   }
   close(id: string) {
     try {
       let connectionObj = this.connectionPool[id];
 
-    if (typeof connectionObj == 'object') {
-      const { client, clientType } = connectionObj || {};
-      switch (clientType) {
-        case 'Raw':
-          client?.terminate();
-          break;
-        case 'SockJs':
-          client?.close();
-          break;
-        case 'Socket.IO':
-          client?.disconnect();
-          break;
-        default:
-          client?.close();
-          break;
+      if (typeof connectionObj == 'object') {
+        const { client, clientType } = connectionObj || {};
+        switch (clientType) {
+          case 'Raw':
+            client?.terminate();
+            break;
+          case 'SockJs':
+            client?.close();
+            break;
+          case 'Socket.IO':
+            client?.disconnect();
+            break;
+          default:
+            client?.close();
+            break;
+        }
       }
-    }
-    if (this.connectionPool && this.connectionPool.hasOwnProperty(id)) {
-      delete this.connectionPool[id];
-    }
+      if (this.connectionPool && this.connectionPool.hasOwnProperty(id)) {
+        delete this.connectionPool[id];
+      }
     } catch (error) {
-      
+
     }
   }
   onmessage(id: string, fnc: Function, event: string = '') {
@@ -201,7 +201,7 @@ class socketClient {
       let connectionObj = this.connectionPool[id];
       if (typeof connectionObj == 'object') {
         const { options, clientType, client } = connectionObj || {};
-        if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
+        if (client === undefined || Object.prototype.toString.call(client) !== '[object Object]') {
           return
         }
         switch (clientType) {
@@ -234,164 +234,164 @@ class socketClient {
         }
       }
     } catch (error) {
-      
+
     }
   }
   onclose(id: string, fnc: Function) {
     try {
       let connectionObj = this.connectionPool[id];
 
-    if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj || {};
-      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
-        return
+      if (typeof connectionObj == 'object') {
+        const { options, clientType, client } = connectionObj || {};
+        if (client === undefined || Object.prototype.toString.call(client) !== '[object Object]') {
+          return
+        }
+        switch (clientType) {
+          case 'Raw':
+            client.on('close', function message(data: any) {
+              fnc(data);
+            });
+            break;
+          case 'SockJs':
+            client.onclose = function (e: any) {
+              fnc(e);
+            };
+            break;
+          case 'Socket.IO':
+            switch (options.socketIoVersion) {
+              case 'v2':
+                client.on('disconnect', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              case 'v3':
+                client.on('disconnect', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              case 'v4':
+                client.on('disconnect', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              default:
+                break;
+            }
+            break;
+          default:
+            break;
+        }
       }
-      switch (clientType) {
-        case 'Raw':
-          client.on('close', function message(data: any) {
-            fnc(data);
-          });
-          break;
-        case 'SockJs':
-          client.onclose = function (e: any) {
-            fnc(e);
-          };
-          break;
-        case 'Socket.IO':
-          switch (options.socketIoVersion) {
-            case 'v2':
-              client.on('disconnect', (data: any) => {
-                fnc(data);
-              });
-              break;
-            case 'v3':
-              client.on('disconnect', (data: any) => {
-                fnc(data);
-              });
-              break;
-            case 'v4':
-              client.on('disconnect', (data: any) => {
-                fnc(data);
-              });
-              break;
-            default:
-              break;
-          }
-          break;
-        default:
-          break;
-      }
-    }
     } catch (error) {
-      
+
     }
   }
   onconnect(id: string, fnc: Function) {
     try {
       let that: any = this;
-    let connectionObj = this.connectionPool[id];
-    if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj || {};
-      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
-        return
+      let connectionObj = this.connectionPool[id];
+      if (typeof connectionObj == 'object') {
+        const { options, clientType, client } = connectionObj || {};
+        if (client === undefined || Object.prototype.toString.call(client) !== '[object Object]') {
+          return
+        }
+        switch (clientType) {
+          case 'Raw':
+            client.on('open', function message() {
+              connectionObj.reconnectCount = options?.reconnectNum || 0;
+              fnc();
+            });
+            break;
+          case 'SockJs':
+            client.onopen = function (e: any) {
+              fnc(e);
+            };
+            break;
+          case 'Socket.IO':
+            switch (options.socketIoVersion) {
+              case 'v2':
+                client.on('connect', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              case 'v3':
+                client.on('connect', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              case 'v4':
+                client.on('connect', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              default:
+                break;
+            }
+            break;
+          default:
+            break;
+        }
       }
-      switch (clientType) {
-        case 'Raw':
-          client.on('open', function message() {
-            connectionObj.reconnectCount = options?.reconnectNum || 0;
-            fnc();
-          });
-          break;
-        case 'SockJs':
-          client.onopen = function (e: any) {
-            fnc(e);
-          };
-          break;
-        case 'Socket.IO':
-          switch (options.socketIoVersion) {
-            case 'v2':
-              client.on('connect', (data: any) => {
-                fnc(data);
-              });
-              break;
-            case 'v3':
-              client.on('connect', (data: any) => {
-                fnc(data);
-              });
-              break;
-            case 'v4':
-              client.on('connect', (data: any) => {
-                fnc(data);
-              });
-              break;
-            default:
-              break;
-          }
-          break;
-        default:
-          break;
-      }
-    }
     } catch (error) {
-      
+
     }
   }
   onerror(id: string, fnc: Function) {
     try {
       let that: any = this;
-    let connectionObj = this.connectionPool[id];
-    if (typeof connectionObj == 'object') {
-      const { options, clientType, client } = connectionObj || {};
-      if(client === undefined || Object.prototype.toString.call(client) !== '[object Object]'){
-        return
-      }
-      switch (clientType) {
-        case 'Raw':
-          client.on("error", (error: any) => {
-            // 异常重连
-            if (options.hasOwnProperty('reconnectNum')) {
-              if (options.reconnectNum > connectionObj.reconnectCount && client?.readyState != 1) {
-                that.reConnect(id, connectionObj);
+      let connectionObj = this.connectionPool[id];
+      if (typeof connectionObj == 'object') {
+        const { options, clientType, client } = connectionObj || {};
+        if (client === undefined || Object.prototype.toString.call(client) !== '[object Object]') {
+          return
+        }
+        switch (clientType) {
+          case 'Raw':
+            client.on("error", (error: any) => {
+              // 异常重连
+              if (options.hasOwnProperty('reconnectNum')) {
+                if (options.reconnectNum > connectionObj.reconnectCount && client?.readyState != 1) {
+                  that.reConnect(id, connectionObj);
+                } else {
+                  fnc(error?.message || String(error));
+                }
               } else {
                 fnc(error?.message || String(error));
               }
-            } else {
-              fnc(error?.message || String(error));
+            });
+            break;
+          case 'SockJs':
+            client.onerror = function (e: any) {
+              fnc(e);
+            };
+            break;
+          case 'Socket.IO':
+            switch (options.socketIoVersion) {
+              case 'v2':
+                client.on('connect_error', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              case 'v3':
+                client.on('connect_error', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              case 'v4':
+                client.on('connect_error', (data: any) => {
+                  fnc(data);
+                });
+                break;
+              default:
+                break;
             }
-          });
-          break;
-        case 'SockJs':
-          client.onerror = function (e: any) {
-            fnc(e);
-          };
-          break;
-        case 'Socket.IO':
-          switch (options.socketIoVersion) {
-            case 'v2':
-              client.on('connect_error', (data: any) => {
-                fnc(data);
-              });
-              break;
-            case 'v3':
-              client.on('connect_error', (data: any) => {
-                fnc(data);
-              });
-              break;
-            case 'v4':
-              client.on('connect_error', (data: any) => {
-                fnc(data);
-              });
-              break;
-            default:
-              break;
-          }
-          break;
-        default:
-          break;
+            break;
+          default:
+            break;
+        }
       }
-    }
     } catch (error) {
-      
+
     }
   }
 
