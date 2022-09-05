@@ -11,6 +11,9 @@ class socketClient {
   }
   initOptions(api: any) {
     const { url, socketConfig, request, method, target_id } = api;
+    if (Object.prototype.toString.call(this.connectionPool[target_id]?.client) === "[object Object]" && JSON.stringify(this.connectionPool[target_id]?.client) != '{}') {
+      this.close(target_id);
+    }
     this.connectionPool[target_id] = {
       id: target_id,
       client: {},
@@ -72,7 +75,6 @@ class socketClient {
 
     if (typeof connectionObj == 'object') {
       const { options, clientType } = connectionObj;
-
       if (typeof options == 'object') {
         switch (clientType) {
           case 'Raw':
@@ -188,6 +190,7 @@ class socketClient {
             client?.close();
             break;
         }
+        connectionObj.client = {};
       }
       if (this.connectionPool && this.connectionPool.hasOwnProperty(id)) {
         delete this.connectionPool[id];
@@ -258,25 +261,10 @@ class socketClient {
             };
             break;
           case 'Socket.IO':
-            switch (options.socketIoVersion) {
-              case 'v2':
-                client.on('disconnect', (data: any) => {
-                  fnc(data);
-                });
-                break;
-              case 'v3':
-                client.on('disconnect', (data: any) => {
-                  fnc(data);
-                });
-                break;
-              case 'v4':
-                client.on('disconnect', (data: any) => {
-                  fnc(data);
-                });
-                break;
-              default:
-                break;
-            }
+            client.on('disconnect', (data: any) => {
+              console.log(555);
+              fnc(data);
+            });
             break;
           default:
             break;
