@@ -31,6 +31,7 @@ class socketClient {
           connectionObj.options.maxPayload = socketConfig.informationSize * 1024 * 1024;
           connectionObj.options.reconnectNum = parseInt(socketConfig.reconnectNum);
           connectionObj.options.reconnectTime = parseInt(socketConfig.reconnectTime);
+          connectionObj.options.followRedirects = true;
           if (request && request.hasOwnProperty('header') && request.header.hasOwnProperty('parameter') && request.header.parameter instanceof Array) {
             connectionObj.options.headers = {};
             for (const header of request.header.parameter) {
@@ -112,12 +113,15 @@ class socketClient {
       // 连接client
       this.createClient(api?.target_id);
     } catch (error) {
-
+      this.close(api?.target_id);
+      console.log('连接error', error);
     }
   }
 
-  reConnect(id: string, connectionObj: any) {
+  reConnect(id: string) {
+    let that = this;
     try {
+      let connectionObj = this.connectionPool[id];
       let reconnectTime = 5000;
 
       if (typeof connectionObj == 'object') {
@@ -127,7 +131,7 @@ class socketClient {
 
         connectionObj.reconnectCount++
         setTimeout(() => {
-          this.createClient(id);
+          that.connect(id);
         }, reconnectTime);
       }
     } catch (error) {
@@ -178,6 +182,7 @@ class socketClient {
         const { client, clientType } = connectionObj || {};
         switch (clientType) {
           case 'Raw':
+            client?.close();
             client?.terminate();
             break;
           case 'SockJs':
@@ -190,7 +195,6 @@ class socketClient {
             client?.close();
             break;
         }
-        connectionObj.client = {};
       }
       if (this.connectionPool && this.connectionPool.hasOwnProperty(id)) {
         delete this.connectionPool[id];
@@ -241,6 +245,8 @@ class socketClient {
     }
   }
   onclose(id: string, fnc: Function) {
+    console.log("监听连接断开");
+
     try {
       let connectionObj = this.connectionPool[id];
 
@@ -251,9 +257,11 @@ class socketClient {
         }
         switch (clientType) {
           case 'Raw':
-            client.on('close', function message(data: any) {
+            client.removeEventListener('close');
+            client.onclose = function message(data: any) {
+              console.log("Raw连接断开");
               fnc(data);
-            });
+            }
             break;
           case 'SockJs':
             client.onclose = function (e: any) {
@@ -275,6 +283,8 @@ class socketClient {
     }
   }
   onconnect(id: string, fnc: Function) {
+    console.log('监听连接成功');
+
     try {
       let that: any = this;
       let connectionObj = this.connectionPool[id];
@@ -285,10 +295,12 @@ class socketClient {
         }
         switch (clientType) {
           case 'Raw':
-            client.on('open', function message() {
+            client.removeEventListener('open');
+            client.onopen = function message() {
+              console.log('Raw连接成功');
               connectionObj.reconnectCount = options?.reconnectNum || 0;
               fnc();
-            });
+            }
             break;
           case 'SockJs':
             client.onopen = function (e: any) {
@@ -325,6 +337,7 @@ class socketClient {
     }
   }
   onerror(id: string, fnc: Function) {
+    console.log("监听连接异常");
     try {
       let that: any = this;
       let connectionObj = this.connectionPool[id];
@@ -335,18 +348,21 @@ class socketClient {
         }
         switch (clientType) {
           case 'Raw':
-            client.on("error", (error: any) => {
+            client.removeEventListener('error');
+            client.onerror = (error: any) => {
+              console.log("Raw连接异常");
               // 异常重连
               if (options.hasOwnProperty('reconnectNum')) {
                 if (options.reconnectNum > connectionObj.reconnectCount && client?.readyState != 1) {
-                  that.reConnect(id, connectionObj);
+                  that.reConnect(id);
+                  fnc(error?.message || String(error));
                 } else {
                   fnc(error?.message || String(error));
                 }
               } else {
                 fnc(error?.message || String(error));
               }
-            });
+            }
             break;
           case 'SockJs':
             client.onerror = function (e: any) {
