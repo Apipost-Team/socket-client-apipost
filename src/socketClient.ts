@@ -146,7 +146,7 @@ class socketClient {
         const { options, clientType, client } = connectionObj || {};
         switch (clientType) {
           case 'Raw':
-            client?.send(data);
+            client?.send(data, { headers: connectionObj?.options?.headers || {}});
             break;
           case 'SockJs':
             client?.send(data);
@@ -214,12 +214,16 @@ class socketClient {
         switch (clientType) {
           case 'Raw':
             client.on('message', function message(data: any) {
-              fnc(data);
+              try {
+                fnc(data);
+              } catch (error) { }
             });
             break;
           case 'SockJs':
             client.onmessage = function (e: any) {
-              fnc(e.data);
+              try {
+                fnc(e.data);
+              } catch (error) { }
             };
             break;
           case 'Socket.IO':
@@ -227,13 +231,17 @@ class socketClient {
               options.socketIoEventListeners.forEach((item: any) => {
                 if ((!item.hasOwnProperty('is_checked') || item.is_checked > 0) && item.hasOwnProperty('key') && item.key && item.key.length > 0) {
                   client.on(item.key, (data: any) => {
-                    fnc(data);
+                    try {
+                      fnc(data);
+                    } catch (error) { }
                   });
                 }
               });
             }
             client.on('message', (data: any) => {
-              fnc(data);
+              try {
+                fnc(data);
+              } catch (error) { }
             });
             break;
           default:
@@ -259,19 +267,25 @@ class socketClient {
           case 'Raw':
             client.removeEventListener('close');
             client.onclose = function message(data: any) {
+              try {
+                fnc(data);
+              } catch (error) { }
               console.log("Raw连接断开");
-              fnc(data);
             }
             break;
           case 'SockJs':
             client.onclose = function (e: any) {
-              fnc(e);
+              try {
+                fnc(e);
+              } catch (error) { }
             };
             break;
           case 'Socket.IO':
             client.on('disconnect', (data: any) => {
               console.log(555);
-              fnc(data);
+              try {
+                fnc(data);
+              } catch (error) { }
             });
             break;
           default:
@@ -298,30 +312,40 @@ class socketClient {
             client.removeEventListener('open');
             client.onopen = function message() {
               console.log('Raw连接成功');
-              connectionObj.reconnectCount = options?.reconnectNum || 0;
-              fnc();
+              try {
+                connectionObj.reconnectCount = options?.reconnectNum || 0;
+                fnc();
+              } catch (error) { }
             }
             break;
           case 'SockJs':
             client.onopen = function (e: any) {
-              fnc(e);
+              try {
+                fnc(e);
+              } catch (error) { }
             };
             break;
           case 'Socket.IO':
             switch (options.socketIoVersion) {
               case 'v2':
                 client.on('connect', (data: any) => {
-                  fnc(data);
+                  try {
+                    fnc(data);
+                  } catch (error) { }
                 });
                 break;
               case 'v3':
                 client.on('connect', (data: any) => {
-                  fnc(data);
+                  try {
+                    fnc(data);
+                  } catch (error) { }
                 });
                 break;
               case 'v4':
                 client.on('connect', (data: any) => {
-                  fnc(data);
+                  try {
+                    fnc(data);
+                  } catch (error) { }
                 });
                 break;
               default:
@@ -350,40 +374,50 @@ class socketClient {
           case 'Raw':
             client.removeEventListener('error');
             client.onerror = (error: any) => {
-              console.log("Raw连接异常");
-              // 异常重连
-              if (options.hasOwnProperty('reconnectNum')) {
-                if (options.reconnectNum > connectionObj.reconnectCount && client?.readyState != 1) {
-                  that.reConnect(id);
-                  fnc(error?.message || String(error));
+              try {
+                // 异常重连
+                if (options.hasOwnProperty('reconnectNum')) {
+                  if (options.reconnectNum > connectionObj.reconnectCount && client?.readyState != 1) {
+                    that.reConnect(id);
+                    fnc(error?.message || String(error));
+                  } else {
+                    fnc(error?.message || String(error));
+                  }
                 } else {
                   fnc(error?.message || String(error));
                 }
-              } else {
-                fnc(error?.message || String(error));
-              }
+              } catch (error) { }
+              console.log("Raw连接异常");
             }
             break;
           case 'SockJs':
             client.onerror = function (e: any) {
-              fnc(e);
+              try {
+                fnc(e);
+              } catch (error) { }
             };
             break;
           case 'Socket.IO':
             switch (options.socketIoVersion) {
               case 'v2':
                 client.on('connect_error', (data: any) => {
-                  fnc(data);
+                  try {
+                    fnc(data);
+                  } catch (error) { }
                 });
                 break;
               case 'v3':
                 client.on('connect_error', (data: any) => {
-                  fnc(data);
+                  try {
+                    fnc(data);
+                  } catch (error) { }
                 });
                 break;
               case 'v4':
                 client.on('connect_error', (data: any) => {
-                  fnc(data);
+                  try {
+                    fnc(data);
+                  } catch (error) { }
                 });
                 break;
               default:
