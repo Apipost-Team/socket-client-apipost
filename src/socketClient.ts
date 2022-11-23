@@ -79,11 +79,11 @@ class socketClient {
       if (typeof options == 'object') {
         switch (clientType) {
           case 'Raw':
-            connectionObj.client = new WebSocket(options.url, {}, options);
+            connectionObj.client = new WebSocket(options.url, [], options);
             console.log('OPEN', connectionObj?.client?.readyState);
             break;
           case 'SockJs':
-            connectionObj.client = new sockJs(options.url, {}, options);
+            connectionObj.client = new sockJs(options.url, [], options);
             break;
           case 'Socket.IO':
             switch (options.socketIoVersion) {
