@@ -3,7 +3,7 @@ import { io as socketIo3 } from 'socket.io-client3';
 import { io as socketIo4 } from 'socket.io-client4';
 import sockJs from 'sockjs-client';
 import WebSocket from 'ws';
-
+import { SOCKJS_DEFAULT_OPTIONS, DEFAULT_OPTIONS } from './constants/options';
 class socketClient {
   connectionPool: any;
   constructor() {
@@ -79,22 +79,31 @@ class socketClient {
       if (typeof options == 'object') {
         switch (clientType) {
           case 'Raw':
-            connectionObj.client = new WebSocket(options.url, [], options);
+            connectionObj.client = new WebSocket(options.url, [], {
+              ...DEFAULT_OPTIONS,
+              ...options
+            });
             console.log('OPEN', connectionObj?.client?.readyState);
             break;
           case 'SockJs':
-            connectionObj.client = new sockJs(options.url, [], options);
+            connectionObj.client = new sockJs(options.url, [], { ...SOCKJS_DEFAULT_OPTIONS, ...options });
             break;
           case 'Socket.IO':
             switch (options.socketIoVersion) {
               case 'v2':
-                connectionObj.client = socketIo2(options.url, { path: options.path })
+                connectionObj.client = socketIo2(options.url, { ...DEFAULT_OPTIONS, path: options.path })
                 break;
               case 'v3':
-                connectionObj.client = socketIo3(options.url, options)
+                connectionObj.client = socketIo3(options.url, {
+                  ...DEFAULT_OPTIONS,
+                  ...options
+                })
                 break;
               case 'v4':
-                connectionObj.client = socketIo4(options.url, options)
+                connectionObj.client = socketIo4(options.url, {
+                  ...DEFAULT_OPTIONS,
+                  ...options
+                })
                 break;
               default:
                 break;
@@ -146,7 +155,7 @@ class socketClient {
         const { options, clientType, client } = connectionObj || {};
         switch (clientType) {
           case 'Raw':
-            client?.send(data, { headers: connectionObj?.options?.headers || {}});
+            client?.send(data, { headers: connectionObj?.options?.headers || {} });
             break;
           case 'SockJs':
             client?.send(data);
